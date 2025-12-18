@@ -34,41 +34,64 @@
 
 <script>
 async function findMarkets() {
-  navigator.geolocation.getCurrentPosition(async pos => {
-    const lat = pos.coords.latitude;
-    const lng = pos.coords.longitude;
+  alert("Button clicked. Getting your location…");
 
-    // Get ZIP code
-    const geo = await fetch(
-      `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`
-    );
-    const geoData = await geo.json();
-    const zip = geoData.postcode;
+  if (!navigator.geolocation) {
+    alert("Geolocation is not supported by your browser.");
+    return;
+  }
 
-    // CALL YOUR RENDER BACKEND
-    const res = await fetch(
-      "https://farmers-market-backend.onrender.com
-/api/markets?zip=" +
-      zip + "&lat=" + lat + "&lng=" + lng
-    );
+  navigator.geolocation.getCurrentPosition(
+    async (pos) => {
+      try {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
 
-    const markets = await res.json();
-    const results = document.getElementById("results");
-    results.innerHTML = "";
+        alert("Location found. Searching markets…");
 
-    markets.forEach(m => {
-      results.innerHTML += `
-        <div class="card">
-          <strong>${m.name}</strong><br>
-          ${m.address}<br>
-          ${m.city}, ${m.state}<br>
-          ${m.distance} miles away
-        </div>
-      `;
-    });
-  });
+        const geo = await fetch(
+          `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`
+        );
+        const geoData = await geo.json();
+        const zip = geoData.postcode;
+
+        const res = await fetch(
+          "https://farmers-market-backend.onrender.com/api/markets?zip=" +
+          zip + "&lat=" + lat + "&lng=" + lng
+        );
+
+        const markets = await res.json();
+        const results = document.getElementById("results");
+        results.innerHTML = "";
+
+        if (markets.length === 0) {
+          results.innerHTML = "<p>No markets found nearby.</p>";
+          return;
+        }
+
+        markets.forEach(m => {
+          results.innerHTML += `
+            <div class="card">
+              <strong>${m.name}</strong><br>
+              ${m.address}<br>
+              ${m.city}, ${m.state}<br>
+              ${m.distance} miles away
+            </div>
+          `;
+        });
+
+      } catch (err) {
+        alert("Error loading markets.");
+        console.error(err);
+      }
+    },
+    () => {
+      alert("Location permission was denied.");
+    }
+  );
 }
 </script>
+
 
 </body>
 </html>
